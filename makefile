@@ -1,7 +1,7 @@
 #
 #   module  : makefile
-#   version : 1.1
-#   date    : 09/12/20
+#   version : 1.2
+#   date    : 09/21/20
 #
 #   42minjoy in assembly
 #
@@ -50,6 +50,11 @@ my_lexer: my_lexer.o my_parse.o
 	$(CC) -o$@ my_lexer.o my_parse.o
 
 my_lexer.c: my_parse.c
+
+joy.asm: joy.s
+	cat joy.s
+	./my_lexer $<
+	mv $<.text $@
 
 ################################################################################
 
