@@ -1,7 +1,7 @@
 #
 #   module  : makefile
-#   version : 1.3
-#   date    : 09/21/20
+#   version : 1.4
+#   date    : 09/28/20
 #
 #   42minjoy in assembly
 #
@@ -17,7 +17,7 @@
 C = libc.a
 CC = gcc
 
-NORMAL = -fpic -Os -ffast-math -Wall -Wextra
+NORMAL = -fno-stack-protector -fpic -Os -ffast-math -Wall -Wextra
 EXTRA = -mno-sse -march=native -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-builtin -mno-red-zone -fno-align-functions -fno-align-loops -fno-align-jumps -fno-align-labels -fno-exceptions -fno-ident -fno-tree-vectorize -fomit-frame-pointer
 
 CFLAGS  = $(NORMAL) $(EXTRA)
