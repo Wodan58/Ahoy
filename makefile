@@ -1,7 +1,7 @@
 #
 #   module  : makefile
-#   version : 1.4
-#   date    : 09/28/20
+#   version : 1.5
+#   date    : 10/12/20
 #
 #   42minjoy in assembly
 #
@@ -17,7 +17,7 @@
 C = libc.a
 CC = gcc
 
-NORMAL = -fno-stack-protector -fpic -Os -ffast-math -Wall -Wextra
+NORMAL = -fno-stack-protector -fpie -Os -ffast-math -Wall -Wextra
 EXTRA = -mno-sse -march=native -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-builtin -mno-red-zone -fno-align-functions -fno-align-loops -fno-align-jumps -fno-align-labels -fno-exceptions -fno-ident -fno-tree-vectorize -fomit-frame-pointer
 
 CFLAGS  = $(NORMAL) $(EXTRA)
@@ -52,7 +52,7 @@ my_lexer: my_lexer.o my_parse.o
 my_lexer.c: my_parse.c
 
 joy.asm: joy.s
-	cat joy.s
+#	cat joy.s
 	./my_lexer $<
 	mv $<.text $@
 
