@@ -1,6 +1,11 @@
 language: c
 compiler: gcc
 
+addons:
+  apt:
+    packages:
+      - nasm
+
 install:
   - gcc --version
 
