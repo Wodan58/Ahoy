@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.1
-    date    : 09/12/20
+    version : 1.2
+    date    : 02/08/21
 */
 #include <unistd.h>
 #include <ctype.h>
@@ -199,9 +199,9 @@ ip			{ yylval.num = REG_IP; return REG_IP; }
 \.cfi_endproc.*		;
 \.cfi_remember_state.*	;
 \.cfi_restore_state.*	;
-\.comm.*		{ int leng; char *str, *ptr; for (str = yytext + 5;
-			  isspace(*str); str++); for (ptr = str; *ptr != ',';
-			  ptr++); leng = ptr - str; print_bss(str, leng);
+\.comm.*		{ int leng; char *ptr, *str = yytext + 5; while
+			  (isspace(*str)) str++; ptr = str; while (*ptr != ',')
+			  ptr++; leng = ptr - str; print_bss(str, leng);
 			  declare_bss(str, leng); local = 0; }
 \.file.*		;
 \.globl.*		;
@@ -230,7 +230,7 @@ rep			;
 int main(int argc, char *argv[])
 {
     int rv, ch;
-    char str[MAXSTR];
+    char str[MAXSTR + 1];
 
     if (argc != 2) {
 	fprintf(stderr, "Use: %s file\n", argv[0]);
@@ -240,17 +240,17 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Could not read %s\n", argv[1]);
 	return 1;
     }
-    sprintf(str, "%s.text", argv[1]);
+    snprintf(str, MAXSTR, "%s.text", argv[1]);
     if ((textfp = fopen(str, "w")) == 0) {
 	fprintf(stderr, "Could not write %s\n", str);
 	return 1;
     }
-    sprintf(str, "%s.data", argv[1]);
+    snprintf(str, MAXSTR, "%s.data", argv[1]);
     if ((datafp = fopen(str, "w+")) == 0) {
 	fprintf(stderr, "Could not write %s\n", str);
 	return 1;
     }
-    sprintf(str, "%s.bss", argv[1]);
+    snprintf(str, MAXSTR, "%s.bss", argv[1]);
     if ((bssfp = fopen(str, "w+")) == 0) {
 	fprintf(stderr, "Could not write %s\n", str);
 	return 1;
@@ -265,10 +265,12 @@ int main(int argc, char *argv[])
     while ((ch = fgetc(bssfp)) != EOF)
 	fputc(ch, textfp);
     print_extern();
-    sprintf(str, "%s.data", argv[1]);
-    remove(str);
-    sprintf(str, "%s.bss", argv[1]);
-    remove(str);
+    snprintf(str, MAXSTR, "%s.data", argv[1]);
+    if (remove(str))
+	rv++;
+    snprintf(str, MAXSTR, "%s.bss", argv[1]);
+    if (remove(str))
+	rv++;
     return rv;
 }
 
@@ -288,13 +290,15 @@ int copy_data(void)
 	new_offset = ftell(datafp);
 	return 0;
     }
-    fseek(datafp, old_offset, 0);
+    if (fseek(datafp, old_offset, 0))
+	return 1;
     while (ftell(datafp) != new_offset) {
 	ch = fgetc(datafp);
 	fputc(ch, textfp);
     }
     old_offset = new_offset;
-    fseek(datafp, 0, 2);
+    if (fseek(datafp, 0, 2))
+	return 1;
     new_offset = ftell(datafp);
     return new_offset == old_offset;
 }

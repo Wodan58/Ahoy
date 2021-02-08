@@ -1,7 +1,7 @@
 /*
     module  : joy.c
-    version : 1.1
-    date    : 09/12/20
+    version : 1.2
+    date    : 01/12/21
 */
 #if 0
 #include <stdio.h>
@@ -1369,7 +1369,7 @@ static long i(memrange x)
 	return m[x].val;
     point('R', "integer value required");
     my_longjmp(JL10, 1);
-    return 0;
+    return 1;
 }  /* i */
 
 static memrange l(memrange x)
