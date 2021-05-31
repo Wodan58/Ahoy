@@ -1,7 +1,7 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.3
+    version : 1.4
     date    : 05/31/21
 */
 #include <unistd.h>
@@ -14,8 +14,6 @@
 #define BSS	3
 
 #define MAXSTR	100
-
-extern int yydebug;
 
 static int size;
 static unsigned char local;
@@ -243,7 +241,6 @@ int main(int argc, char *argv[])
     int rv, ch;
     char str[MAXSTR + 1];
 
-    yydebug = 0;
     if (argc != 2) {
 	fprintf(stderr, "Use: %s file\n", argv[0]);
 	return 1;
