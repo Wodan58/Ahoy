@@ -1,20 +1,23 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.2
-    date    : 02/08/21
+    version : 1.3
+    date    : 05/31/21
 */
 #include <unistd.h>
 #include <ctype.h>
+#include "my_struc.h"
 #include "my_parse.h"
 
 #define TEXT	1
 #define DATA	2
+#define BSS	3
 
 #define MAXSTR	100
 
 extern int yydebug;
 
+static int size;
 static unsigned char local;
 
 unsigned char section;
@@ -25,7 +28,7 @@ void declare_bss(char *ptr, int leng);
 char *strip_dot(char *str);
 char *print_str(char *str);
 int copy_data(void);
-void print_bss(char *str, int leng);
+void print_bss(char *str, int leng, int mode);
 %}
 
 %option yylineno
@@ -199,9 +202,10 @@ ip			{ yylval.num = REG_IP; return REG_IP; }
 \.cfi_endproc.*		;
 \.cfi_remember_state.*	;
 \.cfi_restore_state.*	;
+\.zero.*		;
 \.comm.*		{ int leng; char *ptr, *str = yytext + 5; while
 			  (isspace(*str)) str++; ptr = str; while (*ptr != ',')
-			  ptr++; leng = ptr - str; print_bss(str, leng);
+			  ptr++; leng = ptr - str; print_bss(str, leng, 1);
 			  declare_bss(str, leng); local = 0; }
 \.file.*		;
 \.globl.*		;
@@ -212,16 +216,23 @@ ip			{ yylval.num = REG_IP; return REG_IP; }
 \.quad.*		fprintf(datafp, "\tdq\t%s\n", strip_dot(yytext + 6));
 \.section.*		{ if (strstr(yytext + 8, ".text")) section = TEXT; else
 			  section = DATA; }
-\.size.*		;
+\.size.*		{ char *ptr; if (section == BSS)
+			  if ((ptr = strchr(yytext, ',')) != 0)
+			  size = atoi(ptr + 1); }
 \.string		fprintf(datafp, "\tdb\t");
 \.text.*		section = TEXT;
+\.data.*		section = DATA;
+\.bss.*			section = BSS;
 \.type.*		;
 \.word.*		fprintf(datafp, "\tdw\t%s\n", strip_dot(yytext + 6));
 
 rep			;
 {symbol}		{ char *ptr; if ((ptr = strchr(yytext, '@')) != 0)
-			  *ptr = 0; yylval.str = strdup(yytext); return Name; }
-[*+,:[\]]		return yytext[0];
+			  *ptr = 0; if (section == BSS) { print_bss(yytext,
+			  yyleng, 0); declare_bss(yytext, yyleng); local = 0; }
+			  else { yylval.str = strdup(yytext); return Name; } }
+[:]			if (section != BSS) return yytext[0];
+[*+,[\]]		return yytext[0];
 \n			|
 .			;
 
@@ -232,6 +243,7 @@ int main(int argc, char *argv[])
     int rv, ch;
     char str[MAXSTR + 1];
 
+    yydebug = 0;
     if (argc != 2) {
 	fprintf(stderr, "Use: %s file\n", argv[0]);
 	return 1;
@@ -316,9 +328,13 @@ char *strip_dot(char *str)
     return str;
 }
 
-void print_bss(char *str, int leng)
+void print_bss(char *str, int leng, int mode)
 {
     if (!local)
 	fprintf(bssfp, "\tglobal %.*s\n", leng, str);
-    fprintf(bssfp, "%.*s:\n\tresb %d\n", leng, str, atoi(str + leng + 1));
+    if (mode)
+	fprintf(bssfp, "%.*s:\n\tresb\t%d\n", leng, str, atoi(str + leng + 1));
+    else
+	fprintf(bssfp, "%.*s:\n\tresb\t%d\n", leng, str, size);
+    size = 0;
 }

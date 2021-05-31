@@ -1,7 +1,7 @@
 /*
     module  : joy.c
-    version : 1.2
-    date    : 01/12/21
+    version : 1.4
+    date    : 05/31/21
 */
 #if 0
 #include <stdio.h>
@@ -12,12 +12,13 @@
 #include <setjmp.h>
 #endif
 
+#include <inttypes.h>
 #include "my_libc.h"
 
 #define my_isspace(ch)	(ch < '!')
 
 #ifdef _MSC_VER
-#pragma warning(disable : 4244 4996 )
+#pragma warning(disable : 4244 4996)
 #endif
 
 #define CORRECT_GARBAGE
@@ -70,7 +71,7 @@ typedef enum {
     boolean_, char_, integer_, list_, unknownident
 } standardident;
 
-/* File: Included file for scanutilities */
+/* File: Included file for scan utilities */
 
 #define maxincludelevel	  5
 #define maxlinelength	  132
@@ -196,6 +197,11 @@ static void point(char diag, char *mes)
 
 /* - - - - -   MODULE SCANNER  - - - - - */
 
+static void closelisting(void)
+{
+    my_close(listing);
+}
+
 /*
     iniscanner - initialize global variables
 */
@@ -206,6 +212,7 @@ static void iniscanner(void)
 	my_fprint(STDERR, "%s (not open for writing)\n", list_filename);
 	my_exit(0);
     }
+    my_atexit(closelisting);
 #if 0
     writelisting = 0;
     my_ch = ' ';
@@ -247,14 +254,37 @@ static void est(char *a, standardident symb)
     stdidents[laststdident].symb = symb;
 }  /* est */
 
+static void initinputs(void)
+{
+    int i;
+
+    for (i = 0; i < maxincludelevel; i++)
+	inputs[i].fil = ERROR;
+}
+
+static void release(void)
+{
+    int i;
+
+    for (i = 0; i < maxincludelevel; i++)
+	if (inputs[i].fil != ERROR)
+	    my_close(inputs[i].fil);
+}
+
 static void newfile(char *a)
 {
+    static int init;
 #if 0
     int i;
     char str[256];
 #endif
 
     LOGFILE(__func__);
+    if (!init) {
+	init = 1;
+	initinputs();
+	my_atexit(release);
+    }
     my_strncpy(inputs[includelevel].nam, a, identlength);
     inputs[includelevel].nam[identlength] = 0;
     inputs[includelevel].lastlinenumber = linenumber;
@@ -268,9 +298,9 @@ static void newfile(char *a)
 	    my_close(inputs[i].fil);
 	    break;
 	}
-    if (inputs[includelevel].fil != 0)
-	my_close(inputs[includelevel].fil);
 #endif
+    if (inputs[includelevel].fil != ERROR)
+	my_close(inputs[includelevel].fil);
     if ((inputs[includelevel].fil = my_open(a, O_RDWR, 0)) == ERROR) {
 	my_fprint(STDERR, "%s (not open for reading)\n", a);
 	my_exit(0);
@@ -856,7 +886,7 @@ typedef struct _REC_table {
 } _REC_table;
 
 typedef struct _REC_m {
-    long val;
+    intptr_t val;
     memrange nxt;
     unsigned char op;
     boolean marked;
@@ -869,7 +899,9 @@ static memrange firstusernode, freelist, programme;
 static memrange s,  /* stack */
 		dump;
 
+#if 0
 static standardident last_op_executed;
+#endif
 static long stat_kons, stat_gc, stat_ops, stat_calls;
 static clock_t stat_lib;
 
@@ -1021,7 +1053,7 @@ static void mark(memrange n)
     }
 }  /* mark */
 
-static memrange kons(standardident o, long v, memrange n)
+static memrange kons(standardident o, intptr_t v, memrange n)
 {
     memrange i;
     long collected;
@@ -1118,7 +1150,7 @@ static void readfactor(memrange *where)
 	lookup();
 #ifdef READ_LIBRARY_ONCE
 	if (id == unknownident)
-	    *where = kons(id, (long)my_strdup(ident), 0);
+	    *where = kons(id, (intptr_t)my_strdup(ident), 0);
 	else
 #endif
 	    *where = kons(id, locatn, 0);
@@ -1630,9 +1662,9 @@ int main(int argc, char *argv[])
 
     LOGFILE(__func__);
     start_clock = my_clock();
+    initialise();
     my_atexit(perhapsstatistics);
     my_atexit(finalise);
-    initialise();
     for (freelist = i = 1; i < MAXMEM; i++)
 	m[i].nxt = i + 1;
 #if 0
@@ -1678,7 +1710,9 @@ int main(int argc, char *argv[])
     do {
 	getsym();
 	if (sym != period) {
+#if 0
 	    last_op_executed = get_;
+#endif
 	    programme = 0;
 	    readfactor(&programme);
 #if 0

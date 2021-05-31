@@ -1,11 +1,11 @@
 %{
 /*
     module  : my_parse.y
-    version : 1.1
-    date    : 09/12/20
+    version : 1.2
+    date    : 05/31/21
 */
 #include <stdio.h>
-#include "my_parse.h"
+#include "my_struc.h"
 
 extern unsigned char section;
 extern FILE *textfp, *datafp, *bssfp;
@@ -28,21 +28,23 @@ static khash_t(Used) *usedTab;	/* table with used symbols */
 
 int yylex(void);
 void yyerror(char *str);
-char *print_num(long num);
-char *print_reg(long num);
-char *print_mem(struct mem mem, int size);
-int copy_data(void);
+
 char *print_str(char *str);
+char *print_num(long num);
+char *print_reg(int num);
+char *print_mem(mem_t mem);
+char *print_jmp(jmp_t jmp);
+int copy_data(void);
 %}
 
 %token <str> Name
 %token <num> Number
 
 %token PTR
-%token <num> BYTE
-%token <num> WORD
-%token <num> DWORD
-%token <num> QWORD
+%token <reg> BYTE
+%token <reg> WORD
+%token <reg> DWORD
+%token <reg> QWORD
 
 %token OP_ADD
 %token OP_AND
@@ -109,83 +111,83 @@ char *print_str(char *str);
 %token OP_TEST
 %token OP_XOR
 
-%token <num> REG_AH
-%token <num> REG_AL
-%token <num> REG_AX
-%token <num> REG_BH
-%token <num> REG_BL
-%token <num> REG_BP
-%token <num> REG_BPL
-%token <num> REG_BX
-%token <num> REG_CH
-%token <num> REG_CL
-%token <num> REG_CX
-%token <num> REG_DH
-%token <num> REG_DI
-%token <num> REG_DIL
-%token <num> REG_DL
-%token <num> REG_DX
-%token <num> REG_EAX
-%token <num> REG_EBP
-%token <num> REG_EBX
-%token <num> REG_ECX
-%token <num> REG_EDI
-%token <num> REG_EDX
-%token <num> REG_ESI
-%token <num> REG_ESP
-%token <num> REG_R10
-%token <num> REG_R10B
-%token <num> REG_R10D
-%token <num> REG_R10W
-%token <num> REG_R11
-%token <num> REG_R11B
-%token <num> REG_R11D
-%token <num> REG_R11W
-%token <num> REG_R12
-%token <num> REG_R12B
-%token <num> REG_R12D
-%token <num> REG_R12W
-%token <num> REG_R13
-%token <num> REG_R13B
-%token <num> REG_R13D
-%token <num> REG_R13W
-%token <num> REG_R14
-%token <num> REG_R14B
-%token <num> REG_R14D
-%token <num> REG_R14W
-%token <num> REG_R15
-%token <num> REG_R15B
-%token <num> REG_R15D
-%token <num> REG_R15W
-%token <num> REG_R8
-%token <num> REG_R8B
-%token <num> REG_R8D
-%token <num> REG_R8W
-%token <num> REG_R9
-%token <num> REG_R9B
-%token <num> REG_R9D
-%token <num> REG_R9W
-%token <num> REG_RAX
-%token <num> REG_RBP
-%token <num> REG_RBX
-%token <num> REG_RCX
-%token <num> REG_RDI
-%token <num> REG_RDX
-%token <num> REG_RIP
-%token <num> REG_RSI
-%token <num> REG_RSP
-%token <num> REG_SI
-%token <num> REG_SIL
-%token <num> REG_SP
-%token <num> REG_SPL
-%token <num> REG_EIP
-%token <num> REG_IP
+%token <reg> REG_AH
+%token <reg> REG_AL
+%token <reg> REG_AX
+%token <reg> REG_BH
+%token <reg> REG_BL
+%token <reg> REG_BP
+%token <reg> REG_BPL
+%token <reg> REG_BX
+%token <reg> REG_CH
+%token <reg> REG_CL
+%token <reg> REG_CX
+%token <reg> REG_DH
+%token <reg> REG_DI
+%token <reg> REG_DIL
+%token <reg> REG_DL
+%token <reg> REG_DX
+%token <reg> REG_EAX
+%token <reg> REG_EBP
+%token <reg> REG_EBX
+%token <reg> REG_ECX
+%token <reg> REG_EDI
+%token <reg> REG_EDX
+%token <reg> REG_ESI
+%token <reg> REG_ESP
+%token <reg> REG_R10
+%token <reg> REG_R10B
+%token <reg> REG_R10D
+%token <reg> REG_R10W
+%token <reg> REG_R11
+%token <reg> REG_R11B
+%token <reg> REG_R11D
+%token <reg> REG_R11W
+%token <reg> REG_R12
+%token <reg> REG_R12B
+%token <reg> REG_R12D
+%token <reg> REG_R12W
+%token <reg> REG_R13
+%token <reg> REG_R13B
+%token <reg> REG_R13D
+%token <reg> REG_R13W
+%token <reg> REG_R14
+%token <reg> REG_R14B
+%token <reg> REG_R14D
+%token <reg> REG_R14W
+%token <reg> REG_R15
+%token <reg> REG_R15B
+%token <reg> REG_R15D
+%token <reg> REG_R15W
+%token <reg> REG_R8
+%token <reg> REG_R8B
+%token <reg> REG_R8D
+%token <reg> REG_R8W
+%token <reg> REG_R9
+%token <reg> REG_R9B
+%token <reg> REG_R9D
+%token <reg> REG_R9W
+%token <reg> REG_RAX
+%token <reg> REG_RBP
+%token <reg> REG_RBX
+%token <reg> REG_RCX
+%token <reg> REG_RDI
+%token <reg> REG_RDX
+%token <reg> REG_RIP
+%token <reg> REG_RSI
+%token <reg> REG_RSP
+%token <reg> REG_SI
+%token <reg> REG_SIL
+%token <reg> REG_SP
+%token <reg> REG_SPL
+%token <reg> REG_EIP
+%token <reg> REG_IP
 
-%type <num> register
+%type <reg> register
 %type <num> opt_offset
 %type <num> opt_number
 %type <num> opt_scale
-%type <num> size
+%type <reg> size
 
 %type <jmp> jmp_name
 %type <idx> opt_index
@@ -193,37 +195,13 @@ char *print_str(char *str);
 %type <mem> lea_memory
 
 %union {
+    int reg;
     long num;
     char *str;
-    struct idx {
-	long reg;
-	long scale;
-    } idx;
-    struct mem {
-	long size;
-	long tag;
-	union {
-	    struct {
-		char *name;
-		long offset;
-	    };
-	    struct {
-		long reg;
-		struct idx idx;
-		long num;
-	    };
-	};
-    } mem;
-    struct jmp {
-	int tag;
-	union {
-	    char *name;
-	    long reg;
-	    struct mem mem;
-	};
-    } jmp;
+    idx_t idx;
+    mem_t mem;
+    jmp_t jmp;
 };
-
 %%
 
 program	: /* empty */
@@ -250,25 +228,25 @@ instr	: OP_MUL register
 	| OP_INC register
 	  { fprintf(textfp, "\tinc\t%s\n", print_reg($<num>2)); }
 	| OP_INC memory
-	  { fprintf(textfp, "\tinc\t%s\n", print_mem($<mem>2, 1)); }
+	  { fprintf(textfp, "\tinc\t%s\n", print_mem($<mem>2)); }
 	| OP_DEC register
 	  { fprintf(textfp, "\tdec\t%s\n", print_reg($<num>2)); }
 	| OP_DEC memory
-	  { fprintf(textfp, "\tdec\t%s\n", print_mem($<mem>2, 1)); }
+	  { fprintf(textfp, "\tdec\t%s\n", print_mem($<mem>2)); }
 	| OP_ADD register ',' register
 	  { fprintf(textfp, "\tadd\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_ADD register ',' memory
 	  { fprintf(textfp, "\tadd\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_ADD register ',' Number
 	  { fprintf(textfp, "\tadd\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
 	| OP_ADD memory ',' register
-	  { fprintf(textfp, "\tadd\t%s, %s\n", print_mem($<mem>2, 0),
+	  { fprintf(textfp, "\tadd\t%s, %s\n", print_mem($<mem>2),
 	    print_reg($<num>4)); }
 	| OP_ADD memory ',' Number
-	  { fprintf(textfp, "\tadd\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\tadd\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	| OP_AND register ',' register
 	  { fprintf(textfp, "\tand\t%s, %s\n", print_reg($<num>2),
@@ -281,45 +259,45 @@ instr	: OP_MUL register
 	    print_reg($<num>4)); }
 	| OP_CMP register ',' memory
 	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_CMP register ',' Number
 	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
 	| OP_CMP memory ',' register
-	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_mem($<mem>2, 0),
+	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_mem($<mem>2),
 	    print_reg($<num>4)); }
 	| OP_CMP memory ',' Number
-	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\tcmp\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	| OP_IMUL register ',' register
 	  { fprintf(textfp, "\timul\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_IMUL register ',' memory
 	  { fprintf(textfp, "\timul\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_IMUL register ',' register ',' Number
 	  { fprintf(textfp, "\timul\t%s, %s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4), print_num($<num>6)); }
 	| OP_IMUL register ',' memory ',' Number
 	  { fprintf(textfp, "\timul\t%s, %s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0), print_num($<num>6)); }
+	    print_mem($<mem>4), print_num($<num>6)); }
 	| OP_IMUL memory ',' Number
-	  { fprintf(textfp, "\timul\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\timul\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	| OP_MOV register ',' register
 	  { fprintf(textfp, "\tmov\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_MOV register ',' memory
 	  { fprintf(textfp, "\tmov\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_MOV register ',' Number
 	  { fprintf(textfp, "\tmov\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
 	| OP_MOV memory ',' register
-	  { fprintf(textfp, "\tmov\t%s, %s\n", print_mem($<mem>2, 0),
+	  { fprintf(textfp, "\tmov\t%s, %s\n", print_mem($<mem>2),
 	    print_reg($<num>4)); }
 	| OP_MOV memory ',' Number
-	  { fprintf(textfp, "\tmov\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\tmov\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	| OP_MOVABS register ',' Number
 	  { fprintf(textfp, "\tmov\t%s, %s\n", print_reg($<num>2),
@@ -329,13 +307,13 @@ instr	: OP_MUL register
 	    print_reg($<num>4)); }
 	| OP_MOVSX register ',' memory
 	  { fprintf(textfp, "\tmovsx\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 1)); }
+	    print_mem($<mem>4)); }
 	| OP_MOVZX register ',' register
 	  { fprintf(textfp, "\tmovzx\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_MOVZX register ',' memory
 	  { fprintf(textfp, "\tmovzx\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 1)); }
+	    print_mem($<mem>4)); }
 	| OP_OR register ',' register
 	  { fprintf(textfp, "\tor\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
@@ -347,22 +325,22 @@ instr	: OP_MUL register
 	    print_reg($<num>4)); }
 	| OP_SUB register ',' memory
 	  { fprintf(textfp, "\tsub\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_SUB register ',' Number
 	  { fprintf(textfp, "\tsub\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
 	| OP_SUB memory ',' register
-	  { fprintf(textfp, "\tsub\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\tsub\t%s, %s\n", print_mem($<mem>2),
 	    print_reg($<num>4)); }
 	| OP_SUB memory ',' Number
-	  { fprintf(textfp, "\tsub\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\tsub\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	| OP_BT register ',' register
 	  { fprintf(textfp, "\tbt\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_CMOVE register ',' memory
 	  { fprintf(textfp, "\tcmove\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_CMOVLE register ',' register
 	  { fprintf(textfp, "\tcmovle\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
@@ -376,73 +354,70 @@ instr	: OP_MUL register
 	  { fprintf(textfp, "\tcmovs\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
 	| OP_CALL jmp_name
-	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tcall\t%s\n",
-	    print_str($<jmp>2.name)); else if ($<jmp>2.tag == MEM)
-	    fprintf(textfp, "\tcall\t%s\n", print_mem($<jmp>2.mem, 0)); else
-	    fprintf(textfp, "\tcall\t%s\n", print_reg($<jmp>2.reg)); }
+	  { fprintf(textfp, "\tcall\t%s\n", print_jmp($<jmp>2)); }
 	| OP_JA jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tja\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tja\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tja\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JAE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjae\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjae\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjae\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JB jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjb\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjb\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjb\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JBE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjbe\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjbe\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjbe\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JC jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjc\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjc\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjc\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tje\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tje\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tje\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JG jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjg\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjg\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjg\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JGE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjge\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjge\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjge\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JL jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjl\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjl\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjl\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JLE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjle\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjle\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjle\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JMP jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjmp\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjmp\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjmp\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JNB jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjnb\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjnb\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjnb\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JNC jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjnc\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjnc\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjnc\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JNE jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjne\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjne\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjne\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JNS jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjns\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjns\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjns\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_JS jmp_name
 	  { if ($<jmp>2.tag == NAME) fprintf(textfp, "\tjs\t%s\n",
-	    print_str($<jmp>2.name)); else fprintf(textfp, "\tjs\t%s\n",
+	    print_str($<jmp>2.str)); else fprintf(textfp, "\tjs\t%s\n",
 	    print_reg($<jmp>2.reg)); }
 	| OP_CWDE
 	  { fprintf(textfp, "\tcwde\n"); }
@@ -463,7 +438,7 @@ instr	: OP_MUL register
 	| OP_NEG register
 	  { fprintf(textfp, "\tneg\t%s\n", print_reg($<num>2)); }
 	| OP_NEG memory
-	  { fprintf(textfp, "\tneg\t%s\n", print_mem($<mem>2, 1)); }
+	  { fprintf(textfp, "\tneg\t%s\n", print_mem($<mem>2)); }
 	| OP_NOT register
 	  { fprintf(textfp, "\tnot\t%s\n", print_reg($<num>2)); }
 	| OP_SAR register
@@ -471,9 +446,12 @@ instr	: OP_MUL register
 	| OP_SAR register ',' Number
 	  { fprintf(textfp, "\tsar\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
+	| OP_SAR register ',' register
+	  { fprintf(textfp, "\tsar\t%s, %s\n", print_reg($<num>2),
+	    print_reg($<num>4)); }
 	| OP_LEA register ',' lea_memory
 	  { fprintf(textfp, "\tlea\t%s, %s\n", print_reg($<num>2),
-	    print_mem($<mem>4, 0)); }
+	    print_mem($<mem>4)); }
 	| OP_SAL register ',' Number
 	  { fprintf(textfp, "\tsal\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
@@ -498,7 +476,7 @@ instr	: OP_MUL register
 	| OP_PUSH register
 	  { fprintf(textfp, "\tpush\t%s\n", print_reg($<num>2)); }
 	| OP_PUSH memory
-	  { fprintf(textfp, "\tpush\t%s\n", print_mem($<mem>2, 1)); }
+	  { fprintf(textfp, "\tpush\t%s\n", print_mem($<mem>2)); }
 	| OP_PUSH Number
 	  { fprintf(textfp, "\tpush\t%s\n", print_num($<num>2)); }
 	| OP_SBB register ',' register
@@ -520,7 +498,7 @@ instr	: OP_MUL register
 	  { fprintf(textfp, "\ttest\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }
 	| OP_TEST memory ',' Number
-	  { fprintf(textfp, "\ttest\t%s, %s\n", print_mem($<mem>2, 1),
+	  { fprintf(textfp, "\ttest\t%s, %s\n", print_mem($<mem>2),
 	    print_num($<num>4)); }
 	;
 
@@ -609,7 +587,7 @@ opt_offset
 	  { $<num>$ = 0; }
 	| Number
 	| '+' Number
-	  { $<num>$ = $2; }
+	  { $<num>$ = $<num>2; }
 	;
 
 opt_number
@@ -632,38 +610,44 @@ opt_index
 	  { $<idx>$.reg = $<num>2; $<idx>$.scale = $<num>3; }
 	;
 
-memory	: size PTR Name '[' REG_RIP opt_offset ']'
-	  { int unused; khiter_t key = kh_put(Used, usedTab, $<str>3, &unused);
-	    if (unused) kh_value(usedTab, key) = 0; $<mem>$.size = $<num>1;
-	    $<mem>$.tag = NAME; $<mem>$.name = $<str>3; $<mem>$.offset =
-	    $<num>6; }
-	| size PTR opt_number '[' register opt_index ']'
-	  { $<mem>$.size = $<num>1; $<mem>$.tag = REG; $<mem>$.reg = $<num>5;
-	    $<mem>$.idx = $<idx>6; $<mem>$.num = $<num>3; }
-	;
-
 lea_memory
 	: Name '[' REG_RIP opt_offset ']'
 	  { int unused; khiter_t key = kh_put(Used, usedTab, $<str>1, &unused);
 	    if (unused) kh_value(usedTab, key) = 0; $<mem>$.tag = NAME;
-	    $<mem>$.name = $<str>1; $<mem>$.offset = $<num>4; }
+	    $<mem>$.size = 0; $<mem>$.name.str = $<str>1;
+	    $<mem>$.name.offset = $<num>4; }
 	| opt_number '[' register opt_index ']'
-	  { $<mem>$.tag = REG; $<mem>$.reg = $<num>3; $<mem>$.idx = $<idx>4;
-	    $<mem>$.num = $<num>1; }
+	  { $<mem>$.tag = REG; $<mem>$.size = 0; $<mem>$.reg.reg = $<num>3;
+	    $<mem>$.reg.idx.reg = $<idx>4.reg;
+	    $<mem>$.reg.idx.scale = $<idx>4.scale; $<mem>$.reg.num = $<num>1; }
 	| opt_number '[' Number '+' register opt_scale ']'
-	  { $<mem>$.tag = SCALE; $<mem>$.idx.reg = $<num>5;
-	    $<mem>$.idx.scale = $<num>6; $<mem>$.num = $<num>1 + $<num>3; }
+	  { $<mem>$.tag = SCALE; $<mem>$.size = 0;
+	    $<mem>$.reg.idx.reg = $<num>5; $<mem>$.reg.idx.scale = $<num>6;
+	    $<mem>$.reg.num = $<num>1 + $<num>3; }
+	;
+
+memory	: size PTR Name '[' REG_RIP opt_offset ']'
+	  { int unused; khiter_t key = kh_put(Used, usedTab, $<str>3, &unused);
+	    if (unused) kh_value(usedTab, key) = 0; $<mem>$.tag = NAME;
+	    $<mem>$.size = $<num>1; $<mem>$.name.str = $<str>3;
+	    $<mem>$.name.offset = $<num>6; }
+	| size PTR opt_number '[' register opt_index ']'
+	  { $<mem>$.tag = REG; $<mem>$.size = $<num>1;
+	    $<mem>$.reg.reg = $<num>5;
+	    $<mem>$.reg.idx.reg = $<idx>6.reg;
+	    $<mem>$.reg.idx.scale = $<idx>6.scale;
+	    $<mem>$.reg.num = $<num>3; }
 	;
 
 jmp_name
 	: Name
 	  { int unused; khiter_t key = kh_put(Used, usedTab, $<str>1, &unused);
 	    if (unused) kh_value(usedTab, key) = 0; $<jmp>$.tag = NAME;
-	    $<jmp>$.name = $1; }
+	    $<jmp>$.str = $<str>1; }
 	| register
-	  { $<jmp>$.tag = REG; $<jmp>$.reg = $1; }
+	  { $<jmp>$.tag = REG; $<jmp>$.reg = $<reg>1; }
 	| '[' memory ']'
-	  { $<jmp>$.tag = MEM; $<jmp>$.mem = $2; }
+	  { $<jmp>$.tag = MEM; memcpy(&$<jmp>$.mem, &$<mem>2, sizeof(mem_t)); }
 	;
 
 %%
@@ -695,6 +679,11 @@ void declare_bss(char *ptr, int leng)
     }
 }
 
+char *print_str(char *str)
+{
+    return *str == '.' ? str + 1 : str;
+}
+
 char *print_num(long num)
 {
     char str[MAXSTR];
@@ -703,9 +692,11 @@ char *print_num(long num)
     return strdup(str);
 }
 
-char *print_reg(long num)
+char *print_reg(int reg)
 {
-    switch (num) {
+    char str[MAXSTR];
+
+    switch (reg) {
     case REG_AH   : return "ah";
     case REG_AL   : return "al";
     case REG_AX   : return "ax";
@@ -777,61 +768,76 @@ char *print_reg(long num)
     case REG_SPL  : return "spl";
     case REG_EIP  : return "eip";
     case REG_IP   : return "ip";
-    default       : return "?";
+    default       : sprintf(str, "unknown register: %d", reg);
+		    return strdup(str);
     }
 }
 
-char *print_size(long size)
+char *print_size(int size)
 {
+    char str[MAXSTR];
+
     switch (size) {
     case BYTE  : return "byte";
     case WORD  : return "word";
     case DWORD : return "dword";
     case QWORD : return "qword";
-    default    : return "?";
+    default    : sprintf(str, "unknown size: %d", size);
+		 return strdup(str);
     }
 }
 
-char *print_mem(struct mem mem, int size)
+char *print_mem(mem_t mem)
 {
     char str[MAXSTR];
 
-    if (size)
+    if (mem.size)
 	sprintf(str, "%s [", print_size(mem.size));
     else
 	strcpy(str, "[");
     if (mem.tag == NAME) {
-	sprintf(str + strlen(str), "%s", mem.name[0] == '.' ? mem.name + 1 :
-		mem.name);
-	if (mem.offset > 0)
-	    sprintf(str + strlen(str), "+%ld", mem.offset);
-	else if (mem.offset < 0)
-	    sprintf(str + strlen(str), "%ld", mem.offset);
+	sprintf(str + strlen(str), "%s", print_str(mem.name.str));
+	if (mem.name.offset > 0)
+	    sprintf(str + strlen(str), "+%ld", mem.name.offset);
+	else if (mem.name.offset < 0)
+	    sprintf(str + strlen(str), "%ld", mem.name.offset);
     } else if (mem.tag ==  REG) {
-	sprintf(str + strlen(str), "%s", print_reg(mem.reg));
-	if (mem.idx.reg) {
-	    sprintf(str + strlen(str), "+%s", print_reg(mem.idx.reg));
-	    if (mem.idx.scale)
-		sprintf(str + strlen(str), "*%ld", mem.idx.scale);
+	sprintf(str + strlen(str), "%s", print_reg(mem.reg.reg));
+	if (mem.reg.idx.reg) {
+	    sprintf(str + strlen(str), "+%s", print_reg(mem.reg.idx.reg));
+	    if (mem.reg.idx.scale)
+		sprintf(str + strlen(str), "*%ld", mem.reg.idx.scale);
 	}
-	if (mem.num > 0)
-	    sprintf(str + strlen(str), "+%ld", mem.num);
-	else if (mem.num < 0)
-	    sprintf(str + strlen(str), "%ld", mem.num);
-    } else {
-	sprintf(str + strlen(str), "+%s", print_reg(mem.idx.reg));
-	if (mem.idx.scale)
-	    sprintf(str + strlen(str), "*%ld", mem.idx.scale);
-	if (mem.num > 0)
-	    sprintf(str + strlen(str), "+%ld", mem.num);
-	else if (mem.num < 0)
-	    sprintf(str + strlen(str), "%ld", mem.num);
-    }
+	if (mem.reg.num > 0)
+	    sprintf(str + strlen(str), "+%ld", mem.reg.num);
+	else if (mem.reg.num < 0)
+	    sprintf(str + strlen(str), "%ld", mem.reg.num);
+    } else if (mem.tag == SCALE) {
+	sprintf(str + strlen(str), "+%s", print_reg(mem.reg.idx.reg));
+	if (mem.reg.idx.scale)
+	    sprintf(str + strlen(str), "*%ld", mem.reg.idx.scale);
+	if (mem.reg.num > 0)
+	    sprintf(str + strlen(str), "+%ld", mem.reg.num);
+	else if (mem.reg.num < 0)
+	    sprintf(str + strlen(str), "%ld", mem.reg.num);
+    } else
+	sprintf(str + strlen(str), "unknown: %d", mem.tag);
     strcat(str, "]");
     return strdup(str);
 }
 
-char *print_str(char *str)
+char *print_jmp(jmp_t jmp)
 {
-    return *str == '.' ? str + 1 : str;
+    char str[MAXSTR];
+
+    *str = 0;
+    if (jmp.tag == NAME)
+	sprintf(str + strlen(str), "%s", print_str(jmp.str));
+    else if (jmp.tag == REG)
+	sprintf(str + strlen(str), "%s", print_reg(jmp.reg));
+    else if (jmp.tag == MEM)
+	return print_mem(jmp.mem);
+    else
+	sprintf(str + strlen(str), "unknown: %d", jmp.tag);
+    return strdup(str);
 }
