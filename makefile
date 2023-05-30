@@ -53,7 +53,7 @@ my_lexer: my_lexer.o my_parse.o
 my_lexer.c: my_parse.c
 
 joy.asm: joy.s
-#	cat joy.s
+	cat joy.s
 	./my_lexer $<
 	mv $<.text $@
 
