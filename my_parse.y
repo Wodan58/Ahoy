@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_parse.y
-    version : 1.2
-    date    : 05/31/21
+    version : 1.3
+    date    : 05/30/23
 */
 #include <stdio.h>
 #include "my_struc.h"
@@ -657,6 +657,7 @@ void print_extern(void)
     khiter_t key;
     const char *str;
 
+    fprintf(textfp, "\tsection .text\n");
     for (key = kh_begin(usedTab); key != kh_end(usedTab); key++)
 	if (kh_exist(usedTab, key)) {
 	    str = kh_key(usedTab, key);

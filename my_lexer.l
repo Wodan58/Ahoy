@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.4
-    date    : 05/31/21
+    version : 1.5
+    date    : 05/30/23
 */
 #include <unistd.h>
 #include <ctype.h>
@@ -38,7 +38,7 @@ nextchar		[.0-9@A-Z_a-z]
 symbol			{firstchar}{nextchar}*
 integer			(0|-?[1-9][0-9]*)
 escape			\\(["'\\btnvfr]|[01][0-9][0-9]|2[0-5][0-5])
-string			\"([^"\\\n]|{escape})*\"
+string			\"([^"]|\\\")*\"
 
 %%
 
@@ -198,27 +198,37 @@ ip			{ yylval.num = REG_IP; return REG_IP; }
 \.cfi_offset.*		;
 \.cfi_restore.*		;
 \.cfi_endproc.*		;
-\.cfi_remember_state.*	;
-\.cfi_restore_state.*	;
+\.cfi_remember.*	;
+\.def.*			;
 \.zero.*		;
-\.comm.*		{ int leng; char *ptr, *str = yytext + 5; while
-			  (isspace(*str)) str++; ptr = str; while (*ptr != ',')
-			  ptr++; leng = ptr - str; print_bss(str, leng, 1);
+\.lcomm.*		{ int leng; char *ptr, *str = yytext + 6; while
+			  (isspace((int)*str)) str++; ptr = str; while
+			  (*ptr != ',') ptr++; leng = ptr - str;
+			  local = 1; print_bss(str, leng, 1);
 			  declare_bss(str, leng); local = 0; }
+\.comm.*		{ int leng; char *ptr, *str = yytext + 5; while
+			  (isspace((int)*str)) str++; ptr = str; while
+			  (*ptr != ',') ptr++; leng = ptr - str;
+			  print_bss(str, leng, 1); declare_bss(str, leng);
+			  local = 0; }
 \.file.*		;
 \.globl.*		;
 \.intel_syntax.*	;
+\.linkonce.*		;
 \.local.*		local = 1;
 \.long.*		fprintf(datafp, "\tdd\t%s\n", strip_dot(yytext + 6));
 \.p2align.*		;
 \.quad.*		fprintf(datafp, "\tdq\t%s\n", strip_dot(yytext + 6));
 \.section.*		{ if (strstr(yytext + 8, ".text")) section = TEXT; else
 			  section = DATA; }
+\.space.*		{ fprintf(bssfp, "\tresb\t%d\n", atoi(yytext + 7)); }
 \.size.*		{ char *ptr; if (section == BSS)
 			  if ((ptr = strchr(yytext, ',')) != 0)
 			  size = atoi(ptr + 1); }
+\.ascii			|
 \.string		fprintf(datafp, "\tdb\t");
 \.text.*		section = TEXT;
+\.rdata.*		|
 \.data.*		section = DATA;
 \.bss.*			section = BSS;
 \.type.*		;
@@ -322,6 +332,8 @@ char *strip_dot(char *str)
 	str[j] = str[i];
     }
     str[j] = 0;
+    if (*str != 'L')
+	fprintf(bssfp, "extern %s\n", str);
     return str;
 }
 
@@ -331,7 +343,9 @@ void print_bss(char *str, int leng, int mode)
 	fprintf(bssfp, "\tglobal %.*s\n", leng, str);
     if (mode)
 	fprintf(bssfp, "%.*s:\n\tresb\t%d\n", leng, str, atoi(str + leng + 1));
-    else
+    else if (size)
 	fprintf(bssfp, "%.*s:\n\tresb\t%d\n", leng, str, size);
+    else
+	fprintf(bssfp, "%.*s:\n", leng, str);
     size = 0;
 }

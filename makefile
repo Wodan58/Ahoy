@@ -1,7 +1,7 @@
 #
 #   module  : makefile
-#   version : 1.5
-#   date    : 10/12/20
+#   version : 1.6
+#   date    : 05/30/23
 #
 #   42minjoy in assembly
 #
@@ -14,15 +14,16 @@
 .SUFFIXES:
 .SUFFIXES: .asm .c .y .l .o .s
 
-C = libc.a
+C = libmy_c.a
 CC = gcc
+LD = gcc
 
 NORMAL = -fno-stack-protector -fpie -Os -ffast-math -Wall -Wextra
 EXTRA = -mno-sse -march=native -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-builtin -mno-red-zone -fno-align-functions -fno-align-loops -fno-align-jumps -fno-align-labels -fno-exceptions -fno-ident -fno-tree-vectorize -fomit-frame-pointer
 
 CFLAGS  = $(NORMAL) $(EXTRA)
 AFLAGS  = -S -masm=intel
-LDFLAGS = -nostdlib -static --build-id=none -L. -lc
+LDFLAGS = -static -nostdlib -Wl,--build-id=none -L. -lmy_c
 ARFLAGS = rvU
 
 ################################################################################
@@ -30,11 +31,11 @@ ARFLAGS = rvU
 dummy: joy 42minjoy.lib tutorial.joy
 	./joy 42minjoy.lib tutorial.joy
 
-LIBC = $(C)(ctype.o) $(C)(exit.o) $(C)(fgets.o) $(C)(free.o) $(C)(itoa.o) \
-       $(C)(malloc.o) $(C)(print.o) $(C)(string.o) $(C)(start.o) $(C)(setjmp.o)
+LIBMY_C = $(C)(ctype.o) $(C)(exit.o) $(C)(fgets.o) $(C)(free.o) $(C)(itoa.o) \
+	$(C)(malloc.o) $(C)(print.o) $(C)(string.o) $(C)(setjmp.o) $(C)(start.o)
 
-joy: joy.o $(LIBC)
-	ld -o$@ joy.o $(LDFLAGS)
+joy: joy.o $(LIBMY_C)
+	$(LD) -o$@ joy.o $(LDFLAGS)
 
 joy.asm: joy.c my_lexer
 ctype.asm: ctype.c my_lexer
