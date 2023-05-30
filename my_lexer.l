@@ -1,7 +1,7 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.5
+    version : 1.6
     date    : 05/30/23
 */
 #include <unistd.h>
@@ -234,6 +234,7 @@ ip			{ yylval.num = REG_IP; return REG_IP; }
 \.type.*		;
 \.word.*		fprintf(datafp, "\tdw\t%s\n", strip_dot(yytext + 6));
 
+endbr64			|
 rep			;
 {symbol}		{ char *ptr; if ((ptr = strchr(yytext, '@')) != 0)
 			  *ptr = 0; if (section == BSS) { print_bss(yytext,
