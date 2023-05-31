@@ -1,7 +1,7 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.8
+    version : 1.9
     date    : 05/31/23
 */
 #include <unistd.h>
@@ -329,13 +329,15 @@ char *strip_dot(char *str)
 {
     int i, j;
 
-    for (j = i = 0; str[i]; j++, i++) {
+    for (i = 0; isspace((int)str[i]); i++)
+	;
+    for (j = 0; str[i]; j++, i++) {
 	if (str[i] == '.')
 	    i++;
 	str[j] = str[i];
     }
     str[j] = 0;
-    if (*str != 'L')
+    if (*str != 'L' && !isdigit((int)*str))
 	fprintf(bssfp, "extern %s\n", str);
     return str;
 }
