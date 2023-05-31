@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_parse.y
-    version : 1.3
-    date    : 05/30/23
+    version : 1.4
+    date    : 05/31/23
 */
 #include <stdio.h>
 #include "my_struc.h"
@@ -97,6 +97,7 @@ int copy_data(void);
 %token OP_RET
 %token OP_SAL
 %token OP_SAR
+%token OP_SARX
 %token OP_SBB
 %token OP_SETA
 %token OP_SETBE
@@ -443,6 +444,9 @@ instr	: OP_MUL register
 	  { fprintf(textfp, "\tnot\t%s\n", print_reg($<num>2)); }
 	| OP_SAR register
 	  { fprintf(textfp, "\tsar\t%s, 1\n", print_reg($<num>2)); }
+	| OP_SARX register ',' register ',' register
+	  { fprintf(textfp, "\tsarx\t%s, %s, %s\n", print_reg($<num>2),
+	    print_reg($<num>4), print_reg($<num>6)); }
 	| OP_SAR register ',' Number
 	  { fprintf(textfp, "\tsar\t%s, %s\n", print_reg($<num>2),
 	    print_num($<num>4)); }

@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.7
-    date    : 05/30/23
+    version : 1.8
+    date    : 05/31/23
 */
 #include <unistd.h>
 #include <ctype.h>
@@ -99,6 +99,7 @@ cmpsb			{ yylval.num = OP_CMPSB; return OP_CMPSB; }
 ret			{ yylval.num = OP_RET; return OP_RET; }
 sal			{ yylval.num = OP_SAL; return OP_SAL; }
 sar			{ yylval.num = OP_SAR; return OP_SAR; }
+sarx			{ yylval.num = OP_SARX; return OP_SARX; }
 sbb			{ yylval.num = OP_SBB; return OP_SBB; }
 seta			{ yylval.num = OP_SETA; return OP_SETA; }
 setbe			{ yylval.num = OP_SETBE; return OP_SETBE; }
