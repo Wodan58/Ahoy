@@ -1,6 +1,6 @@
 #
 #   module  : makefile
-#   version : 1.7
+#   version : 1.8
 #   date    : 05/31/23
 #
 #   42minjoy in assembly
@@ -36,7 +36,7 @@ LIBMY_C = $(C)(ctype.o) $(C)(exit.o) $(C)(fgets.o) $(C)(free.o) $(C)(itoa.o) \
 
 joy: joy.o $(LIBMY_C)
 	$(LD) -o$@ joy.o $(LDFLAGS)
-	ls -l joy.*
+	ls -l joy*
 
 joy.asm: joy.c my_lexer
 ctype.asm: ctype.c my_lexer
@@ -57,7 +57,7 @@ joy.asm: joy.s
 #	cat joy.s
 	./my_lexer $<
 	mv $<.text $@
-	cat $@
+#	cat $@
 
 ################################################################################
 
