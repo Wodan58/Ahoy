@@ -1,7 +1,7 @@
 %{
 /*
     module  : my_lexer.l
-    version : 1.9
+    version : 1.10
     date    : 05/31/23
 */
 #include <unistd.h>
@@ -37,7 +37,6 @@ firstchar		[.@A-Z_a-z]
 nextchar		[.0-9@A-Z_a-z]
 symbol			{firstchar}{nextchar}*
 integer			(0|-?[1-9][0-9]*)
-escape			\\(["'\\btnvfr]|[01][0-9][0-9]|2[0-5][0-5])
 string			\"([^"]|\\\")*\"
 
 %%
@@ -339,6 +338,11 @@ char *strip_dot(char *str)
     str[j] = 0;
     if (*str != 'L' && !isdigit((int)*str))
 	fprintf(bssfp, "extern %s\n", str);
+    for (i = 0; str[i]; i++)
+	if (isdigit((int)str[i]) && str[i + 1] == 'f') {
+	    str[i + 1] = str[i];
+	    str[i] = '.';
+	}
     return str;
 }
 

@@ -1,7 +1,7 @@
 %{
 /*
     module  : my_parse.y
-    version : 1.6
+    version : 1.7
     date    : 05/31/23
 */
 #include <stdio.h>
@@ -223,7 +223,7 @@ label	: Name ':'
 	    if ($<str>1[0] != '.') fprintf(datafp, "\tglobal %s\n", $<str>1);
 	    fprintf(datafp, "%s:\n", print_str($<str>1)); } }
 	| Number ':'
-	    { fprintf(datafp, "%ld:\n", $<num>1); }
+	    { fprintf(datafp, ".%ld:\n", $<num>1); }
 	;
 
 instr	: OP_MUL register
