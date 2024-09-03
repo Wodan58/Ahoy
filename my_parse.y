@@ -1,8 +1,8 @@
 %{
 /*
     module  : my_parse.y
-    version : 1.7
-    date    : 05/31/23
+    version : 1.8
+    date    : 07/04/24
 */
 #include <stdio.h>
 #include "my_struc.h"
@@ -488,6 +488,9 @@ instr	: OP_MUL register
 	| OP_SBB register ',' register
 	  { fprintf(textfp, "\tsbb\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
+	| OP_XOR register ',' Number
+	  { fprintf(textfp, "\txor\t%s, %s\n", print_reg($<num>2),
+	    print_num($<num>2)); }
 	| OP_XOR register ',' register
 	  { fprintf(textfp, "\txor\t%s, %s\n", print_reg($<num>2),
 	    print_reg($<num>4)); }
