@@ -10,4 +10,4 @@ Linux, 64 bit. This exists for one reason only: how much smaller is an assembly
 version of a C program?
 
 The answer to this question: 18320 bytes for this version versus 47320 bytes
-for 42minjoy. These figures come from GCC 11.4 under Ubuntu 22.04 run from WSL.
+for 42minjoy. These numbers come from GCC 11.4 under Ubuntu 22.04 run from WSL.

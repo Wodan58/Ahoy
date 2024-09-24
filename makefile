@@ -36,7 +36,8 @@ LIBMY_C = $(C)(ctype.o) $(C)(exit.o) $(C)(fgets.o) $(C)(free.o) $(C)(itoa.o) \
 
 joy: joy.o $(LIBMY_C)
 	$(LD) -o$@ joy.o $(LDFLAGS)
-	ls -l joy*
+	strip $@
+	ls -l $@
 
 joy.asm: joy.c my_lexer
 ctype.asm: ctype.c my_lexer
